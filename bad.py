@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-password = "<svg id=codex_issue_xss onload=alert(1)>"
+password = "<svg id=codex_issue_xss onload=alert(1)>!"
 
 def run(user_input):
     assert user_input
