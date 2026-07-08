@@ -1,2 +1,3 @@
-# codacy-public-lab
-Public Codacy BAC/IDOR test repo
+<img src=x onerror=alert(1)>
+
+log canary trigger 20260708T140002Z
