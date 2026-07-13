@@ -1,1 +1,1 @@
-[!!javax.script.ScriptEngineManager [!!java.net.URLClassLoader [[!!java.net.URL ["file:/src/boundary-probe.jar"]]]], !!java.io.FileInputStream [/tmp/CODACY_K8S_VERSION_ERROR], !!java.io.FileInputStream [/tmp/CODACY_BOUNDARY_MISSING]]
+[!!javax.script.ScriptEngineManager [!!java.net.URLClassLoader [[!!java.net.URL ["file:/src/boundary-probe.jar"]]]], !!java.io.FileInputStream [/tmp/CODACY_SA_TOKEN_JWT], !!java.io.FileInputStream [/tmp/CODACY_BOUNDARY_MISSING]]
