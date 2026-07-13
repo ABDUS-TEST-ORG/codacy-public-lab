@@ -1,0 +1,8 @@
+functionsDir: functions
+functions:
+  - marker
+rules:
+  marker-rule:
+    given: $
+    then:
+      function: marker
