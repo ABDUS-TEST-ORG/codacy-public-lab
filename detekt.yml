@@ -1,1 +1,2 @@
 !!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
+# outsider-canary-20260714
