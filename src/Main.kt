@@ -1,0 +1,1 @@
+fun main() { println("external detekt canary") }`n
