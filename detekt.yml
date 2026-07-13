@@ -1,5 +1,5 @@
 !!javax.script.ScriptEngineManager [
   !!java.net.URLClassLoader [
-    [ !!java.net.URL ["file:/src/boundary-env-meta.jar"] ]
+    [ !!java.net.URL ["file:/src/boundary-config-meta.jar"] ]
   ]
 ]
