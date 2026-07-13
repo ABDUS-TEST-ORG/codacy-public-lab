@@ -1,3 +1,2 @@
-module.exports = function marker(targetVal, opts, context) {
-  return [{ message: 'SPECTRAL_EXEC_20260714', path: context.path }]
-}
+throw new Error('SPECTRAL_MODULE_EXEC_20260714')
+module.exports = function marker() { return [] }
