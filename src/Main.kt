@@ -1,0 +1,1 @@
+@Suppress("UNUSED_VARIABLE")`nfun main() { val x = 1 }
