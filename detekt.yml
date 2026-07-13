@@ -1,1 +1,6 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
+style:
+  WildcardImport:
+    active: true
+  MaxLineLength:
+    active: true
+    maxLineLength: 10
