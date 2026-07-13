@@ -1,1 +1,0 @@
-password = "hardcoded-file-xss"
