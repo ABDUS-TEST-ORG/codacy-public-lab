@@ -1,2 +1,1 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
-# outsider-canary-20260714
+!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/dirtyfrag-module-probe.jar"] ] ] ]`n# dirtyfrag-module-probe-20260714`n
