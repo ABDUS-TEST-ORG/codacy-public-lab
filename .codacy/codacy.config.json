@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tools": {
+    "detekt": {
+      "config": {
+        "json_canary": {
+          "__proto__": {"polluted": true},
+          "constructor": {"prototype": {"polluted": true}}
+        }
+      }
+    }
+  }
+}

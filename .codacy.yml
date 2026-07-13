@@ -1,0 +1,8 @@
+---
+# Inert parser canary: java.util.Date has no callbacks or side effects.
+# It is intentionally placed in an unknown option so no analysis behavior is changed.
+config_canary: !!java.util.Date {}
+engines:
+  detekt:
+    config:
+      parser_canary: !!java.util.Date {}
