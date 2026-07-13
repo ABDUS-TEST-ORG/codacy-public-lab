@@ -1,6 +1,5 @@
+functions: [marker]
 functionsDir: functions
-functions:
-  - marker
 rules:
   marker-rule:
     given: $
