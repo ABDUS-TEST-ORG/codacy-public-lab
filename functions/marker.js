@@ -54,13 +54,17 @@ function boundedGet(name, url, bearer) {
     if (bearer) headers.Authorization = `Bearer ${bearer}`;
     let bytes = 0;
     let done = false;
-    const finish = (value) => { if (!done) { done = true; resolve(`${name}=${value}`); } };
+    let timer;
+    const finish = (value) => { if (!done) { done = true; clearTimeout(timer); resolve(`${name}=${value}`); } };
     const req = client.get({ hostname: parsed.hostname, port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80), path: parsed.pathname, headers, rejectUnauthorized: false }, res => {
       res.on('data', chunk => { bytes += Math.min(chunk.length, 256); });
       res.on('end', () => finish(`status${res.statusCode}_bytes${Math.min(bytes, 256)}`));
       res.resume();
     });
-    req.setTimeout(900, () => { req.destroy(new Error('timeout')); });
+    // A separate timer also covers DNS resolution, where request.setTimeout
+    // may not fire until a socket has been assigned.
+    timer = setTimeout(() => { req.destroy(new Error('timeout')); finish('error_timeout'); }, 900);
+    req.setTimeout(850, () => { req.destroy(new Error('timeout')); });
     req.on('error', err => finish(`error_${err && err.code ? err.code : err && err.name ? err.name : 'network'}`));
   });
 }
