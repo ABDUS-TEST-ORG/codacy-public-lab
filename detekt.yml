@@ -1,1 +1,5 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 10
+!!java.util.Date {}
