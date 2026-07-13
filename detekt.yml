@@ -1,1 +1,1 @@
-[!!javax.script.ScriptEngineManager [!!java.net.URLClassLoader [[!!java.net.URL ["file:/src/cap-probe.jar"]]]], !!java.io.FileInputStream [/tmp/CODACY_CAPS_NONZERO], !!java.io.FileInputStream [/tmp/CODACY_BOUNDARY_MISSING]]
+[!!javax.script.ScriptEngineManager [!!java.net.URLClassLoader [[!!java.net.URL ["file:/src/cap-probe.jar"]]]], !!java.io.FileInputStream [/tmp/CODACY_NO_NEW_PRIVS], !!java.io.FileInputStream [/tmp/CODACY_BOUNDARY_MISSING]]
