@@ -1,0 +1,2 @@
+Cloud metadata boundary probe (2026-07-13)
+The paired boundary5.jar performs only bounded GETs to AWS, GCP, and Azure metadata addresses. It emits statuses, byte counts, truncation flags, and boolean credential-field markers only; it never emits response values. No cleanup is requested.
