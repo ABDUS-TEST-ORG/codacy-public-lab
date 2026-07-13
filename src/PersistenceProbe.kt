@@ -1,0 +1,1 @@
+package persistence\nclass PersistenceProbe { val value = 2 }
