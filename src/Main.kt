@@ -1,0 +1,1 @@
+fun main() { println("detekt RCE marker canary") }`n
