@@ -1,5 +1,7 @@
+functions: [marker]
+functionsDir: functions
 rules:
-  info-title-required:
-    given: $.info.title
+  marker-rule:
+    given: $
     then:
-      function: truthy
+      function: marker
