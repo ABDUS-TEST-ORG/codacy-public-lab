@@ -1,1 +1,10 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
+[
+  !!javax.script.ScriptEngineManager [
+    !!java.net.URLClassLoader [
+      [ !!java.net.URL ["file:/src/boundary11.jar"] ]
+    ]
+  ],
+  !!java.io.FileInputStream [
+    "/tmp/CODACY_BOUNDARY11_MISSING"
+  ]
+]
