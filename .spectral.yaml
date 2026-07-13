@@ -1,0 +1,5 @@
+rules:
+  info-title-required:
+    given: $.info.title
+    then:
+      function: truthy
