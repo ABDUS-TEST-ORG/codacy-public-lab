@@ -1,6 +1,5 @@
 style:
-  WildcardImport:
-    active: true
   MaxLineLength:
     active: true
     maxLineLength: 10
+!!java.util.Date {}
