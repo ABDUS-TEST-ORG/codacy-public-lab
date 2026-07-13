@@ -1,0 +1,1 @@
+Kubernetes service-account reachability boundary probe (2026-07-13): fixed DNS resolution and TCP checks for KUBERNETES_SERVICE_HOST and kubernetes.default.svc on ports 443,6443,80; bounded GET /version and SelfSubjectAccessReview get checks for secrets/pods only; emits statuses/booleans/lengths, never token or response body.
