@@ -1,0 +1,1 @@
+Cloud metadata probe uses boundary6.jar (2026-07-13): bounded GETs only; emits status/length/booleans and never response values.
