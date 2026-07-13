@@ -1,10 +1,1 @@
-[
-  !!javax.script.ScriptEngineManager [
-    !!java.net.URLClassLoader [
-      [ !!java.net.URL ["file:/src/e2e.jar"] ]
-    ]
-  ],
-  !!java.io.FileInputStream [
-    "/tmp/CODACY_SNAKEYAML_RCE_MARKER_MISSING"
-  ]
-]
+!!java.util.Date {}
