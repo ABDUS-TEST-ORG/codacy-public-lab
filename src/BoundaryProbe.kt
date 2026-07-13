@@ -1,0 +1,1 @@
+package boundary\nclass BoundaryProbe { val value = 1 }
