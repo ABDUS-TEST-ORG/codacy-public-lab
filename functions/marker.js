@@ -1,2 +1,3 @@
-console.log('SPECTRAL_CONFIG_EXEC=codex-spectral-module-canary-20260714')
-module.exports = function marker() { return [] }
+module.exports = function marker(targetVal, opts, context) {
+  return [{ message: 'SPECTRAL_EXEC_20260714', path: context.path }]
+}
