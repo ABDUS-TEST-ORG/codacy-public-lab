@@ -1,0 +1,1 @@
+fun main() { println("detekt local marker canary") }`n
