@@ -1,0 +1,1 @@
+spectral import canary trigger after direct config enable
