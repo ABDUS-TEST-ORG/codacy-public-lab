@@ -1,1 +1,10 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/e2e.jar"] ] ] ]
+[
+  !!javax.script.ScriptEngineManager [
+    !!java.net.URLClassLoader [
+      [ !!java.net.URL ["file:/src/boundary-shared-storage-meta.jar"] ]
+    ]
+  ],
+  !!java.io.FileInputStream [
+    "/tmp/SHARED_META_PROBE_MISSING"
+  ]
+]
