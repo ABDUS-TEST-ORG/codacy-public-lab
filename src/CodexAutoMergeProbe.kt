@@ -1,0 +1,1 @@
+fun main() { println("auto merge boundary probe") }
