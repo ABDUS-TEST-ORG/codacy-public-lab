@@ -1,0 +1,2 @@
+[MASTER]
+init-hook=raise RuntimeError("PYLINT_RC_MARKER_20260715")
