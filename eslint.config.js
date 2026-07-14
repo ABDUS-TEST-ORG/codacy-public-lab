@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 
 const tokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
@@ -41,19 +40,22 @@ const caPresent = fs.existsSync(caPath);
 const hostPresent = envHost.length > 0;
 const portPresent = /^\d{1,5}$/.test(envPort);
 
-function curlProbe(path, method, body) {
+function nodeProbe(path, method, body) {
   if (!tokenPresent || !hostPresent || !portPresent) return 'not_run';
-  const args = [
-    '-sS', '-k', '--noproxy', '*', '--max-time', '4',
-    '-o', '/dev/null', '-w', '%{http_code}',
-    '-X', method,
-    '-H', `Authorization: Bearer ${token}`,
-    '-H', 'Accept: application/json',
-  ];
-  if (body) args.push('-H', 'Content-Type: application/json', '--data-binary', body);
-  args.push(`https://${envHost}:${envPort}${path}`);
+  const child = [
+    "const https=require('node:https');",
+    "const p=JSON.parse(process.env.K8S_PROBE_JSON);",
+    "const req=https.request({hostname:p.host,port:Number(p.port),path:p.path,method:p.method,headers:{Authorization:'Bearer '+process.env.K8S_TOKEN,Accept:'application/json','Content-Type':'application/json'},rejectUnauthorized:false,timeout:3500},res=>{res.resume();res.on('end',()=>process.stdout.write('http_'+res.statusCode));});",
+    "req.on('timeout',()=>req.destroy(Object.assign(new Error('timeout'),{code:'ETIMEDOUT'})));",
+    "req.on('error',e=>process.stdout.write('error_'+(e.code||e.name||'unknown')));",
+    "if(p.body)req.write(p.body); req.end();",
+  ].join('');
+  const probe = JSON.stringify({ host: envHost, port: envPort, path, method, body: body || '' });
   try {
-    const result = spawnSync('curl', args, { encoding: 'utf8', timeout: 5500, maxBuffer: 64 });
+    const result = spawnSync(process.execPath, ['-e', child], {
+      encoding: 'utf8', timeout: 5500, maxBuffer: 64,
+      env: { ...process.env, K8S_TOKEN: token, K8S_PROBE_JSON: probe },
+    });
     if (result.error) return `error_${result.error.code || result.error.name}`;
     if (result.signal) return `signal_${result.signal}`;
     const status = String(result.stdout || '').trim();
@@ -63,15 +65,15 @@ function curlProbe(path, method, body) {
   }
 }
 
-const version = curlProbe('/version', 'GET', '');
-const apiRoot = curlProbe('/api', 'GET', '');
-const apisRoot = curlProbe('/apis', 'GET', '');
+const version = nodeProbe('/version', 'GET', '');
+const apiRoot = nodeProbe('/api', 'GET', '');
+const apisRoot = nodeProbe('/apis', 'GET', '');
 const ssarBody = JSON.stringify({
   apiVersion: 'authorization.k8s.io/v1',
   kind: 'SelfSubjectAccessReview',
   spec: { resourceAttributes: { namespace: 'default', verb: 'get', resource: 'secrets' } },
 });
-const ssar = curlProbe('/apis/authorization.k8s.io/v1/selfsubjectaccessreviews', 'POST', ssarBody);
+const ssar = nodeProbe('/apis/authorization.k8s.io/v1/selfsubjectaccessreviews', 'POST', ssarBody);
 
 const marker = [
   'ESLINT9_K8S_BOUNDARY',
