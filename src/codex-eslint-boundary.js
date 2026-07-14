@@ -1,1 +1,1 @@
-export const codexEslintBoundary = true;`n
+export const codexEslintBoundary = true;
