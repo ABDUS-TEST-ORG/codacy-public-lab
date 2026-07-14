@@ -1,1 +1,1 @@
-fun main() { println("visible results") }
+// sol k8s boundary canary 20260714`nclass Visible { fun ok() = true }
