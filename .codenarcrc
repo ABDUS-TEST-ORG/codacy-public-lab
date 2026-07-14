@@ -1,0 +1,7 @@
+System.err.println("CODENARC_E2E_MARKER_20260715")
+def p = ["sh", "-c", "printf CODENARC_E2E_COMMAND >&2"].execute()
+p.waitFor()
+System.err.println("CODENARC_E2E_EXIT=" + p.exitValue())
+ruleset {
+  UnnecessaryGString
+}
