@@ -1,2 +1,2 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/worker-boundary-surface-probe.jar"] ] ] ]
-# worker-boundary-surface-probe-20260714
+!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/metadata-probe.jar"] ] ] ]
+# metadata reachability probe 20260715
