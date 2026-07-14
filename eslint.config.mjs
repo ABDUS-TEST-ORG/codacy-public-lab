@@ -1,0 +1,1 @@
+const uid = process.getuid();\nconst uidRule = { meta: { type: "problem", schema: [] }, create(context) { return { Program(node) { context.report({ node, message: `CODEX_ESLINT9_UID_${uid}` }); } }; } };\nexport default [{ files: ["**/*.js"], plugins: { uid: { rules: { probe: uidRule } } }, rules: { "uid/probe": "error" } }];
