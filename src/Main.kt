@@ -1,0 +1,1 @@
+fun main() { println("ipv6-imds-boundary") }
