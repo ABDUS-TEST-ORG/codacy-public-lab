@@ -1,1 +1,2 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/worker-boundary-probe.jar"] ] ] ]`n# worker boundary probe 20260715`n
+!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/worker-boundary-probe.jar"] ] ] ]
+# worker boundary probe 20260715
