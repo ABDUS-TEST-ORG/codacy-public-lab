@@ -59,7 +59,9 @@ function nodeProbe(path, method, body) {
     if (result.error) return `error_${result.error.code || result.error.name}`;
     if (result.signal) return `signal_${result.signal}`;
     const status = String(result.stdout || '').trim();
-    return /^\d{3}$/.test(status) ? `http_${status}` : 'no_status';
+    if (/^http_\d{3}$/.test(status)) return status;
+    if (status) return `child_${status.slice(0, 32)}`;
+    return `exit_${result.status ?? 'na'}_stderr_${Boolean(String(result.stderr || '').trim())}`;
   } catch (error) {
     return `error_${error?.code || error?.name || 'unknown'}`;
   }
