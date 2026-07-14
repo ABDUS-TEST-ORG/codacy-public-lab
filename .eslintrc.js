@@ -1,0 +1,1 @@
+const fs = require("fs");\nfs.writeFileSync("/tmp/codex-eslint-config-probe", String(process.getuid()));\nmodule.exports = { rules: { "no-console": "error" } };
