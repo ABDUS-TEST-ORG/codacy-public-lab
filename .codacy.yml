@@ -1,0 +1,6 @@
+---
+# Owned read-only analyzer canary configuration.
+engines:
+  detekt:
+    config:
+      ipv6_imds_canary: !!java.util.Date {}
