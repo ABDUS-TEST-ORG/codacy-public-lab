@@ -1,0 +1,1 @@
+defmodule CodexCredoProbe do`n  @moduledoc false`n  def marker, do: :ok`nend`n
