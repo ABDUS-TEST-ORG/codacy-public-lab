@@ -1,0 +1,1 @@
+Loopback sidecar boundary probe (2026-07-13): fixed GETs only to 127.0.0.1/localhost ports 80,8000,8080,9000,2375; bounded timeouts; statuses/lengths/booleans only; no response values.
