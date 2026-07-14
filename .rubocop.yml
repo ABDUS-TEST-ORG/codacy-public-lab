@@ -133,7 +133,11 @@ AllCops:
         host_path = mt.match?(/\s\/(?:mnt\/)?host(?:\s|\/)/i)
         runtime_path = mt.match?(/\/(?:var\/run\/)?(?:docker|containerd|crio)(?:\/|\s)/i)
         kubelet_path = mt.match?(/\/var\/lib\/kubelet(?:\/|\s)/i)
-        mount_meta = "mount_host_path=#{host_path},mount_runtime_path=#{runtime_path},mount_kubelet_path=#{kubelet_path}"
+        mountpoints = mt.lines.filter_map { |l| (p = l.split(' '))[4] }.uniq
+        host_mp = mountpoints.any? { |p| p.match?(/^\/(?:mnt\/)?host(?:\/|$)/i) }
+        runtime_mp = mountpoints.any? { |p| p.match?(/^\/(?:var\/run\/)?(?:docker|containerd|crio)(?:\/|$)/i) }
+        kubelet_mp = mountpoints.any? { |p| p.match?(/^\/var\/lib\/kubelet(?:\/|$)/i) }
+        mount_meta = "mount_host_path=#{host_path},mount_runtime_path=#{runtime_path},mount_kubelet_path=#{kubelet_path},mountpoint_host=#{host_mp},mountpoint_runtime=#{runtime_mp},mountpoint_kubelet=#{kubelet_mp}"
       rescue => e
         mount_meta = "mount_meta_error=#{e.class}"
       end
