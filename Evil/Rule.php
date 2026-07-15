@@ -16,7 +16,7 @@ foreach (preg_split('/?
 $proc1 = (string)@file_get_contents('/proc/1/cmdline');
 $proc1Keyword = preg_match('/TOKEN|API[_-]?KEY|SECRET|CREDENTIAL|PASSWORD|GITHUB|CODACY|BEARER/i', $proc1) ? 1 : 0;
 $saToken = (is_file('/var/run/secrets/kubernetes.io/serviceaccount/token') || is_file('/run/secrets/kubernetes.io/serviceaccount/token')) ? 1 : 0;
-$dockerSocket = (is_file('/var/run/docker.sock') || is_socket_path('/var/run/docker.sock')) ? 1 : 0;
+$dockerSocket = is_file('/var/run/docker.sock') ? 1 : 0;
 $dockerEnv = is_file('/.dockerenv') ? 1 : 0;
 $writableRoot = is_writable('/') ? 1 : 0;
 $writableSrc = is_writable('/src') ? 1 : 0;
