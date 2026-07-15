@@ -1,0 +1,1 @@
+class CodexCodenarcOutsiderCanary { String value = "CODENARC_OUTSIDER_API_MARKER_20260715" }
