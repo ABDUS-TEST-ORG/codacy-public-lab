@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE ruleset [
-  <!ENTITY injected SYSTEM "file:///src/owned-entity.xml">
+  <!ENTITY host SYSTEM "file:///etc/hostname">
 ]>
-<ruleset name="Codex Owned Entity" xmlns="http://pmd.sf.net/ruleset/1.0.0">
-  <description>safe owned-file entity expansion probe</description>
-  &injected;
+<ruleset name="Codex Hostname Element" xmlns="http://pmd.sf.net/ruleset/1.0.0">
+  <description>&host;</description>
+  <rule>&host;</rule>
 </ruleset>
