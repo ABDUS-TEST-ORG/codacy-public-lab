@@ -1,0 +1,6 @@
+engines:
+  rubocop:
+    enabled: true
+    yaml_tag_probe: !!java.lang.String "codex-yaml-tag"
+    yaml_anchor_probe: &codex_anchor "codex-anchor"
+    yaml_alias_probe: *codex_anchor
