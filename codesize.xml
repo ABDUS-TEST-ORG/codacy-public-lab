@@ -1,9 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE ruleset [
-  <!ENTITY codex SYSTEM "file:///etc/hostname">
+  <!ENTITY injected SYSTEM "file:///src/owned-entity.xml">
 ]>
-<ruleset name="Codex XXE Boundary" xmlns="http://pmd.sf.net/ruleset/1.0.0">
-  <description>&codex;</description>
-  <exclude-pattern>&codex;[</exclude-pattern>
-  <rule ref="rulesets/codesize.xml/CyclomaticComplexity"/>
+<ruleset name="Codex Owned Entity" xmlns="http://pmd.sf.net/ruleset/1.0.0">
+  <description>safe owned-file entity expansion probe</description>
+  &injected;
 </ruleset>

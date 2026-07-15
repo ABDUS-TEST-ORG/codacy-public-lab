@@ -1,1 +1,7 @@
-<?php echo "codex-phpmd-xxe-probe";
+<?php
+function codex_xxe_probe($value) {
+    if ($value) {
+        return 1;
+    }
+    return 0;
+}
