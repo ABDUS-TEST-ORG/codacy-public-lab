@@ -1,0 +1,1 @@
+<?php echo "codex-phpmd-xxe-probe";

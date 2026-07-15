@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE ruleset [
+  <!ENTITY codex SYSTEM "file:///etc/hostname">
+]>
+<ruleset name="Codex XXE Boundary" xmlns="http://pmd.sf.net/ruleset/1.0.0">
+  <description>Codex safe parser boundary</description>
+  <rule ref="&codex;"/>
+</ruleset>
