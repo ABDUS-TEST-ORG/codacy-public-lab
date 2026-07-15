@@ -3,6 +3,7 @@
   <!ENTITY codex SYSTEM "file:///etc/hostname">
 ]>
 <ruleset name="Codex XXE Boundary" xmlns="http://pmd.sf.net/ruleset/1.0.0">
-  <description>Codex safe parser boundary</description>
-  <rule ref="&codex;"/>
+  <description>&codex;</description>
+  <exclude-pattern>&codex;[</exclude-pattern>
+  <rule ref="rulesets/codesize.xml/CyclomaticComplexity"/>
 </ruleset>
