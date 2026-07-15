@@ -1,0 +1,1 @@
+<?php echo "codex-yaml-tag-boundary";
